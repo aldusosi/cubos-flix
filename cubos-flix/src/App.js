@@ -155,11 +155,13 @@ const Movies = [
   const [filtro, setFiltro] = useState("todos");
   const [desconto, setDesconto] = useState(0);
   const [valorASerPago, setValorASerPago] = useState(0);
+  const [msgCupomInput, setMsgCupomInput] = useState(true);
 
   const pesquisar = useRef("");
+  const inputCupon = useRef("");
 
   let valorComDescontoAgregado = 0; //poderá ser usado como preço final com valor de desconto estando incluso ou não.
-
+  
   const [tempoRestante, setTempoRestante] = useState(5 * 60);
   const minutos = String(Math.floor(tempoRestante / 60)).padStart(2,"0");
   const segundos = String(Math.floor(tempoRestante % 60)).padStart(2,"0");
@@ -177,7 +179,7 @@ const Movies = [
   valorComDescontoAgregado = valorASerPago - valorASerPago * desconto;
   console.log(valorComDescontoAgregado);
 
-  function pesquisarFilmesPorNome(e){
+  function pesquisarFilmesButtonClick(e){
     if(!pesquisar.current.value) return;
 
     const novaPesquisa = pesquisar.current.value;
@@ -190,6 +192,19 @@ const Movies = [
     console.log(filmeBuscado);
 
   }
+
+  function pesquisarFilmesInputEnter(event){
+    if(!pesquisar.current.value && event.key !== "Enter") return;
+
+    const novaPesquisa = pesquisar.current.value;
+
+    const filmeBuscado = Movies.filter(filme => filme.title.includes(novaPesquisa));
+
+    if(filmeBuscado.length === 0) return;
+
+    setListaGeralDeFilmes(filmeBuscado);
+    console.log(filmeBuscado);
+}
  
   function handleAdicionaASacola(movie){
     const filme = 
@@ -240,6 +255,39 @@ const Movies = [
 
   }
 
+  function inputEnterCupom(event){
+    const cupom = inputCupon.current.value;
+
+    if(event.key !== "Enter")return;
+    
+    if(cupom === "htmlnaoelinguagem"){
+      if(msgCupomInput){
+        setDesconto(desconto => desconto + 0.10);
+        inputCupon.current.value = "cupom inserido com sucesso!";
+        setMsgCupomInput(false);
+        setTempoRestante(0);
+      }else{
+        inputCupon.current.value = "Não é mais necessário inserir o cupom"
+      }
+    }
+  }
+
+  function buttonClickCupom(){
+
+    const cupom = inputCupon.current.value;
+    
+    if(cupom === "htmlnaoelinguagem"){
+      if(msgCupomInput){
+        setDesconto(desconto => desconto + 0.10);
+        inputCupon.current.value = "cupom inserido com sucesso!";
+        setMsgCupomInput(false);
+        setTempoRestante(0);
+      }else{
+        inputCupon.current.value = "Não é mais necessário inserir o cupom"
+      }
+    }
+ }
+
   useEffect(()=>{
     if(filtro === 'todos'){
       setListaGeralDeFilmes(Movies);
@@ -281,8 +329,8 @@ const Movies = [
           </div>
 
           <div className="search-container">
-            <input ref={pesquisar}type="text" placeholder="Pesquise filmes..."/>
-            <button onClick={(e)=>pesquisarFilmesPorNome(e)}><img src="/search-icon.svg" alt="" /></button>
+            <input ref={pesquisar}type="text" placeholder="Pesquise filmes..." onKeyPress ={(event)=> pesquisarFilmesInputEnter(event)}/>
+            <button onClick={(e)=>pesquisarFilmesButtonClick(e)}><img src="/search-icon.svg" alt="" /></button>
           </div>
 
           <div className="favoritos">
@@ -313,6 +361,7 @@ const Movies = [
             <button onClick={()=>{
               setDesconto(desconto => desconto + 0.10);
               setTempoRestante(0);
+              setMsgCupomInput(false);
               console.log(desconto);
             }}>
               <div className="banner-image" style={{"--bannerImage":`url(/bg-promotion.svg)`}}>
@@ -507,7 +556,12 @@ const Movies = [
 
             <div class="cupom-sacola">
               <p>Insira seu cupom</p>
-              <input type="text" />
+              <div class="input-sacola">
+                <input ref={inputCupon} onKeyPress={inputEnterCupom} type="text" />
+                <button onClick={buttonClickCupom}><img src="./coupon-icon.svg" alt="" /></button>
+                
+              </div>
+              
             </div> 
 
             <div class="button-dados-e-valor">
