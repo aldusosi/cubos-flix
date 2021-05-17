@@ -9,7 +9,7 @@ const Movies = [
   {
     title: 'Mortal Kombat',
     backgroundImg: `${BASE_PATH}w8BVC3qrCWCiTHRz4Rft12dtQF0.jpg`,
-    isStarred: true,
+    isStarred: false,
     starsCount: 9,
     price: 7.5,
     categories: [
@@ -152,7 +152,9 @@ const Movies = [
 
   const [itemsNaSacola, setItemsNaSacola] = useState([]);
   const [listaGeralDeFilmes, setListaGeralDeFilmes] = useState(Movies);
-  const [filtro, setFiltro] = useState("todos");
+  const [movieCategoryFilter, setMovieCategoryFilter] = useState([]);
+  const [movieTitleFilter, setMovieTitleFilter] = useState('');
+  const [search, setSearch] = useState("");
   const [desconto, setDesconto] = useState(0);
   const [valorASerPago, setValorASerPago] = useState(0);
   const [msgCupomInput, setMsgCupomInput] = useState(true);
@@ -193,18 +195,49 @@ const Movies = [
 
   }
 
-  function pesquisarFilmesInputEnter(event){
-    if(!pesquisar.current.value && event.key !== "Enter") return;
+  function handleKeyDown(e){
+    if( e.key !== "Enter" ) return;
 
-    const novaPesquisa = pesquisar.current.value;
+    setMovieTitleFilter(search);
+  }
 
-    const filmeBuscado = Movies.filter(filme => filme.title.includes(novaPesquisa));
+  function filterMovie(movie){
+    if(!movieTitleFilter && movieCategoryFilter.length === 0) return movie;
 
-    if(filmeBuscado.length === 0) return;
+    if(movieTitleFilter && movieCategoryFilter.lenght > 0){
+      if(movieCategoryFilter.some(c => movie.categories.includes(c)) 
+      && movie.title.includes(movieTitleFilter)){
+        return movie;
+      }else{
+        return;
+      }
+    }
 
-    setListaGeralDeFilmes(filmeBuscado);
-    console.log(filmeBuscado);
-}
+    if(movieCategoryFilter.length > 0 && movieCategoryFilter.some(c => movie.categories.includes(c))){
+      return movieCategoryFilter;
+    }
+
+    if(movieTitleFilter && movie.title.includes(movieTitleFilter)){
+      return movie;
+    }
+  }
+
+  function handleFilterClick(filtro){
+    if(filtro === 'all'){
+      setMovieCategoryFilter([]);
+      return;
+    }
+
+    const alreadyChosenFilter = movieCategoryFilter.includes(filtro);
+
+    if(alreadyChosenFilter){
+      const newFilters = movieCategoryFilter.filter(x => x !== filtro);
+      setMovieCategoryFilter(newFilters);
+      return;
+    }
+
+    setMovieCategoryFilter([...movieCategoryFilter, filtro]);
+  }
  
   function handleAdicionaASacola(movie){
     const filme = 
@@ -288,23 +321,18 @@ const Movies = [
     }
  }
 
-  useEffect(()=>{
-    if(filtro === 'todos'){
-      setListaGeralDeFilmes(Movies);
-    }else if(filtro === 'action'){
-      const filmesDeAcao = Movies.filter(filme => filme.categories.includes('action'));
-      setListaGeralDeFilmes(filmesDeAcao);
-    }else if(filtro === 'romance'){
-      const filmesDeRomance = Movies.filter(filme => filme.categories.includes('romance'));
-      setListaGeralDeFilmes(filmesDeRomance);
-    }else if(filtro === 'science fiction'){
-      const filmesDeficcaoCientifica = Movies.filter(filme => filme.categories.includes('science fiction'));
-      setListaGeralDeFilmes(filmesDeficcaoCientifica);
-    }else if(filtro === 'horror'){
-      const filmesDeTerror = Movies.filter(filme => filme.categories.includes('horror'));
-      setListaGeralDeFilmes(filmesDeTerror);
-    }
-  },[filtro]);
+ function alterarCurtida(title){
+
+  const newMovies = [...listaGeralDeFilmes];
+
+   const filme = newMovies.find( x => x.title === title);
+
+   filme.isStarred = !filme.isStarred;
+
+   setListaGeralDeFilmes(newMovies);
+ }
+
+
 
   useEffect(()=>{
     const intervalId = setInterval(()=>{
@@ -329,8 +357,8 @@ const Movies = [
           </div>
 
           <div className="search-container">
-            <input ref={pesquisar}type="text" placeholder="Pesquise filmes..." onKeyPress ={(event)=> pesquisarFilmesInputEnter(event)}/>
-            <button onClick={(e)=>pesquisarFilmesButtonClick(e)}><img src="/search-icon.svg" alt="" /></button>
+            <input ref={pesquisar}type="text" placeholder="Pesquise filmes..." onChange ={e => setSearch(e.target.value)} value={search} onKeyPress={(e) =>handleKeyDown(e)}/>
+            <button onClick={( )=>setMovieTitleFilter(search)}><img src="/search-icon.svg" alt="" /></button>
           </div>
 
           <div className="favoritos">
@@ -394,11 +422,11 @@ const Movies = [
             <div className="lista-de-filmes">
 
               {
-                Movies.map(movie =>
+                listaGeralDeFilmes.slice(0,5).map(movie =>
                   <div className="card" style={{"--cardImage":`url(${movie.backgroundImg})`}}>
                     <div class="curtir">
-                      <button>
-                        <svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <button onClick={()=>alterarCurtida(movie.title)}>
+                        <svg width="20" height="18" viewBox="0 0 20 18" fill={movie.isStarred ? "#FFF" : "none"} xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 2L11.7961 7.52786H17.6085L12.9062 10.9443L14.7023 16.4721L10 13.0557L5.29772 16.4721L7.09383 10.9443L2.39155 7.52786H8.20389L10 2Z" stroke="white" stroke-opacity="0.83"/>
                         </svg>
                       </button>
@@ -431,36 +459,36 @@ const Movies = [
 
           <div className="filmes-container">
 
-            <h2>Filmes</h2>
+            <h2>{movieTitleFilter}</h2>
 
             <div className="buttons">
 
-              <button class={filtro === 'todos' ? "selecionado" : ""} 
-              onClick={()=> setFiltro('todos')}>Todos</button>
+              <button className={ movieCategoryFilter.length === 0 ? "selecionado" : ""} 
+              onClick={()=> handleFilterClick('all')}>Todos</button>
 
-              <button class={filtro === 'action' ? "selecionado" : ""} 
-              onClick={()=> setFiltro('action')}>Ação</button>
+              <button className={movieCategoryFilter.includes("action") ? "selecionado" : ""} 
+              onClick={()=> handleFilterClick('action')}>Ação</button>
 
-              <button className={filtro === 'romance' ? "selecionado" : ""} 
-              onClick={()=> setFiltro('romance')}>Romance</button>
+              <button className={movieCategoryFilter.includes("romance") ? "selecionado" : ""} 
+              onClick={()=> handleFilterClick('romance')}>Romance</button>
 
-              <button className={filtro === 'science fiction' ? "selecionado" : ""} 
-              onClick={()=> setFiltro('science fiction')}>Ficção científica</button>
+              <button className={movieCategoryFilter.includes("science fiction") ? "selecionado" : ""} 
+              onClick={()=> handleFilterClick('science fiction')}>Ficção científica</button>
 
-              <button className={filtro === 'horror' ? "selecionado" : ""} 
-              onClick={()=> setFiltro('horror')}>Terror</button>
+              <button className={movieCategoryFilter.includes("horror") ? "selecionado" : ""} 
+              onClick={()=> handleFilterClick('horror')}>Terror</button>
 
             </div>
 
             <div className="lista-de-filmes">
 
               {
-                listaGeralDeFilmes.map(movie =>
+                listaGeralDeFilmes.filter(filterMovie).map(movie =>
                   <div className="card" style={{"--cardImage":`url(${movie.backgroundImg})`}}>
 
                     <div className="curtir">
-                      <button>
-                        <svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <button onClick={()=>alterarCurtida(movie.title)}>
+                        <svg width="20" height="18" viewBox="0 0 20 18" fill={movie.isStarred?"#FFF" :"none"} xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 2L11.7961 7.52786H17.6085L12.9062 10.9443L14.7023 16.4721L10 13.0557L5.29772 16.4721L7.09383 10.9443L2.39155 7.52786H8.20389L10 2Z" stroke="white" stroke-opacity="0.83"/>
                         </svg>
                       </button>
